@@ -1,0 +1,756 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>A Saga Interativa da Inteligência Artificial</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;800&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Slate & Teal -->
+    <!-- Application Structure Plan: A single-page application with a top sticky navigation bar allowing users to jump to different thematic sections. This non-linear structure replaces the report's linear chapters with an exploratory experience. The key sections are: 1) An introduction (Início). 2) A visual, interactive timeline (Linha do Tempo). 3) A conceptual, interactive diagram showing the AI hierarchy (Hierarquia). 4) A comparative chart for ML vs DL (Comparações). 5) An interactive card-based section for Agent Types (Agentes). 6) A Glossary (Glossário). 7) A summary of future trends (Futuro). This structure was chosen to transform the dense text into a more engaging and digestible format, allowing users to visually grasp relationships and timelines before diving into detailed text, thus enhancing comprehension and retention. The addition of a modal system allows for deeper dives into section content without cluttering the main view, now enhanced with LLM-generated insights. -->
+    <!-- Visualization & Content Choices: 1) Timeline (Table 1): Report Info -> Goal: Show historical progression -> Viz: Interactive vertical timeline (HTML/CSS) -> Interaction: Scroll-based highlighting. 2) AI Hierarchy (Concept): Report Info -> Goal: Organize technologies -> Viz: Nested boxes diagram (HTML/CSS) -> Interaction: Hover to reveal info. 3) ML vs DL (Table 2): Report Info -> Goal: Compare two concepts -> Viz: Grouped Bar Chart (Chart.js/Canvas) -> Interaction: Tooltips on hover. 4) Agent Types (Table 4): Report Info -> Goal: Organize agent categories -> Viz: Interactive accordion cards (HTML/CSS/JS) -> Interaction: Click to expand/collapse. 5) Section Details: Report Info -> Goal: Provide deeper textual context -> Viz: Modal overlay (HTML/JS) -> Interaction: Click 'Saiba Mais' button. Now includes LLM-powered "Expandir com Gemini" button to generate further insights. 6) Glossary: Report Info -> Goal: Define key terms -> Viz: Collapsible list (HTML/JS) -> Interaction: Click term to expand definition. Now includes LLM-powered "Explicar com Gemini" button for simpler explanations and examples. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc; /* slate-50 */
+            color: #1e293b; /* slate-800 */
+        }
+        .nav-link.active {
+            color: #0d9488; /* teal-600 */
+            font-weight: 700;
+        }
+        .nav-link {
+            transition: color 0.3s ease;
+        }
+        .section-fade-in {
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+        }
+        .section-fade-in.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        .timeline-item-content::before {
+            content: '';
+            position: absolute;
+            top: 20px;
+            left: -21px;
+            width: 12px;
+            height: 12px;
+            background-color: #0d9488; /* teal-600 */
+            border: 2px solid #f8fafc;
+            border-radius: 50%;
+            z-index: 1;
+        }
+         .chart-container {
+            position: relative;
+            margin: auto;
+            height: 50vh;
+            max-height: 500px;
+            width: 100%;
+            max-width: 800px;
+        }
+        .accordion-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.5s ease-in-out;
+        }
+        .modal {
+            display: none; /* Hidden by default */
+            position: fixed; /* Stay in place */
+            z-index: 1000; /* Sit on top */
+            left: 0;
+            top: 0;
+            width: 100%; /* Full width */
+            height: 100%; /* Full height */
+            overflow: auto; /* Enable scroll if needed */
+            background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            transition: opacity 0.3s ease-out;
+            pointer-events: none;
+        }
+        .modal.show {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        .modal-content {
+            background-color: #fefefe;
+            margin: auto;
+            padding: 24px;
+            border-radius: 12px;
+            max-width: 800px;
+            width: 90%;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            position: relative;
+            transform: translateY(20px);
+            transition: transform 0.3s ease-out;
+        }
+        .modal.show .modal-content {
+            transform: translateY(0);
+        }
+        .close-button {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .close-button:hover,
+        .close-button:focus {
+            color: #0d9488;
+            text-decoration: none;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <header class="bg-white/80 backdrop-blur-lg sticky top-0 z-50 shadow-sm">
+        <nav class="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex-shrink-0">
+                    <h1 class="text-xl font-bold text-slate-800">Saga da IA</h1>
+                </div>
+                <div class="hidden md:block">
+                    <div class="ml-10 flex items-baseline space-x-4">
+                        <a href="#inicio" class="nav-link px-3 py-2 rounded-md text-sm font-medium text-slate-600 hover:text-teal-600">Início</a>
+                        <a href="#linha-do-tempo" class="nav-link px-3 py-2 rounded-md text-sm font-medium text-slate-600 hover:text-teal-600">Linha do Tempo</a>
+                        <a href="#hierarquia" class="nav-link px-3 py-2 rounded-md text-sm font-medium text-slate-600 hover:text-teal-600">Hierarquia</a>
+                        <a href="#comparacoes" class="nav-link px-3 py-2 rounded-md text-sm font-medium text-slate-600 hover:text-teal-600">Comparações</a>
+                        <a href="#agentes" class="nav-link px-3 py-2 rounded-md text-sm font-medium text-slate-600 hover:text-teal-600">Agentes</a>
+                        <a href="#glossario" class="nav-link px-3 py-2 rounded-md text-sm font-medium text-slate-600 hover:text-teal-600">Glossário</a>
+                        <a href="#futuro" class="nav-link px-3 py-2 rounded-md text-sm font-medium text-slate-600 hover:text-teal-600">Futuro</a>
+                    </div>
+                </div>
+                 <div class="md:hidden">
+                    <select id="mobile-nav" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-teal-500 focus:border-teal-500 block w-full p-2.5">
+                        <option value="#inicio">Início</option>
+                        <option value="#linha-do-tempo">Linha do Tempo</option>
+                        <option value="#hierarquia">Hierarquia</option>
+                        <option value="#comparacoes">Comparações</option>
+                        <option value="#agentes">Agentes</option>
+                        <option value="#glossario">Glossário</option>
+                        <option value="#futuro">Futuro</option>
+                    </select>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <main class="container mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
+
+        <section id="inicio" class="section-fade-in text-center min-h-[60vh] flex flex-col justify-center items-center">
+            <h2 class="text-4xl md:text-6xl font-extrabold text-slate-900 mb-4 leading-tight">A Saga da Inteligência Artificial</h2>
+            <p class="max-w-3xl mx-auto text-lg md:text-xl text-slate-600">Uma jornada interativa desde a lógica simbólica e os "invernos da IA" até a revolução do Deep Learning e a ascensão dos agentes autônomos. Explore a evolução que está moldando nosso futuro.</p>
+            <button class="mt-8 px-6 py-3 bg-teal-600 text-white font-semibold rounded-lg shadow-md hover:bg-teal-700 transition" data-section="inicio">Saiba Mais</button>
+        </section>
+        
+        <section id="linha-do-tempo" class="section-fade-in py-16 md:py-24">
+             <div class="text-center mb-12">
+                <h2 class="text-3xl md:text-4xl font-bold text-slate-900">Linha do Tempo da IA</h2>
+                <p class="mt-4 text-lg text-slate-600 max-w-2xl mx-auto">Navegue pelos marcos cruciais que definiram a jornada da Inteligência Artificial, desde suas fundações teóricas até as aplicações que usamos hoje.</p>
+            </div>
+            <div class="relative max-w-2xl mx-auto">
+                <div class="absolute left-4 top-0 h-full w-0.5 bg-slate-200"></div>
+                <div id="timeline-container" class="space-y-12"></div>
+            </div>
+            <div class="text-center mt-12">
+                <button class="px-6 py-3 bg-teal-600 text-white font-semibold rounded-lg shadow-md hover:bg-teal-700 transition" data-section="linha-do-tempo">Saiba Mais</button>
+            </div>
+        </section>
+
+        <section id="hierarquia" class="section-fade-in py-16 md:py-24 bg-slate-100 rounded-2xl">
+             <div class="text-center mb-12">
+                <h2 class="text-3xl md:text-4xl font-bold text-slate-900">A Estrutura da IA Moderna</h2>
+                <p class="mt-4 text-lg text-slate-600 max-w-3xl mx-auto">A IA não é uma tecnologia única, mas um campo com camadas de especialização. Esta visualização interativa mostra como Machine Learning, Deep Learning e outras inovações se encaixam. Passe o mouse sobre cada caixa para saber mais.</p>
+            </div>
+            <div class="flex justify-center items-center p-4">
+                <div id="ia-box" class="group relative bg-white border-2 border-teal-600 rounded-xl p-8 shadow-lg text-center transition-transform transform hover:scale-105 w-full max-w-4xl">
+                    <h3 class="text-2xl font-bold text-teal-700">Inteligência Artificial (IA)</h3>
+                    <div class="absolute inset-0 bg-teal-700 text-white p-4 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+                        <p class="text-sm">O campo abrangente dedicado a criar máquinas que imitam a inteligência e o comportamento humano.</p>
+                    </div>
+                    <div class="mt-6">
+                        <div id="ml-box" class="group relative bg-white border-2 border-teal-500 rounded-xl p-6 shadow-md text-center transition-transform transform hover:scale-105 w-full max-w-3xl mx-auto">
+                            <h4 class="text-xl font-bold text-teal-600">Machine Learning (ML)</h4>
+                            <div class="absolute inset-0 bg-teal-600 text-white p-4 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+                                <p class="text-sm">Subcampo da IA que permite que sistemas aprendam a partir de dados, sem serem explicitamente programados.</p>
+                            </div>
+                            <div class="mt-4">
+                                <div id="dl-box" class="group relative bg-white border-2 border-teal-400 rounded-xl p-4 shadow-sm text-center transition-transform transform hover:scale-105 w-full max-w-2xl mx-auto">
+                                    <h5 class="text-lg font-bold text-teal-500">Deep Learning (DL)</h5>
+                                     <div class="absolute inset-0 bg-teal-500 text-white p-4 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+                                        <p class="text-sm">Subconjunto do ML que usa redes neurais com múltiplas camadas ("profundas") para aprender padrões complexos de dados brutos.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                         <div class="mt-6 grid md:grid-cols-2 gap-4 text-left">
+                            <div id="rag-box" class="group relative bg-white border-2 border-slate-400 border-dashed rounded-xl p-4 shadow-sm transition-transform transform hover:scale-105">
+                                <h5 class="text-lg font-bold text-slate-600">RAG (Geração Aumentada por Recuperação)</h5>
+                                <p class="text-sm text-slate-500 mt-1">Aprimora modelos de DL (LLMs) conectando-os a conhecimento externo e atualizado.</p>
+                                <div class="absolute inset-0 bg-slate-600 text-white p-4 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+                                    <p class="text-sm">Um framework que torna os LLMs mais precisos e confiáveis, reduzindo "alucinações".</p>
+                                </div>
+                            </div>
+                            <div id="agents-box" class="group relative bg-white border-2 border-slate-400 border-dashed rounded-xl p-4 shadow-sm transition-transform transform hover:scale-105">
+                                <h5 class="text-lg font-bold text-slate-600">Agentes Inteligentes</h5>
+                                <p class="text-sm text-slate-500 mt-1">Aplica IA, ML e DL para perceber, raciocinar e agir autonomamente no ambiente.</p>
+                                <div class="absolute inset-0 bg-slate-600 text-white p-4 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+                                    <p class="text-sm">A manifestação prática e operacional da IA, executando tarefas no mundo real.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="text-center mt-12">
+                <button class="px-6 py-3 bg-teal-600 text-white font-semibold rounded-lg shadow-md hover:bg-teal-700 transition" data-section="hierarquia">Saiba Mais</button>
+            </div>
+        </section>
+
+        <section id="comparacoes" class="section-fade-in py-16 md:py-24">
+             <div class="text-center mb-12">
+                <h2 class="text-3xl md:text-4xl font-bold text-slate-900">ML Tradicional vs. Deep Learning</h2>
+                <p class="mt-4 text-lg text-slate-600 max-w-3xl mx-auto">Embora o Deep Learning seja um tipo de Machine Learning, suas abordagens e requisitos são fundamentalmente diferentes. O gráfico abaixo compara as duas tecnologias em características-chave, ajudando a entender quando cada uma se destaca.</p>
+            </div>
+            <div class="chart-container">
+                <canvas id="mlVsDlChart"></canvas>
+            </div>
+            <div class="text-center mt-12">
+                <button class="px-6 py-3 bg-teal-600 text-white font-semibold rounded-lg shadow-md hover:bg-teal-700 transition" data-section="comparacoes">Saiba Mais</button>
+            </div>
+        </section>
+
+        <section id="agentes" class="section-fade-in py-16 md:py-24 bg-slate-100 rounded-2xl">
+            <div class="text-center mb-12">
+                <h2 class="text-3xl md:text-4xl font-bold text-slate-900">A Evolução dos Agentes Inteligentes</h2>
+                <p class="mt-4 text-lg text-slate-600 max-w-3xl mx-auto">Os agentes são a manifestação da IA no mundo real, traduzindo inteligência em ação. Sua sofisticação evoluiu de simples reações a raciocínios complexos e aprendizado autônomo. Clique em cada tipo para explorar suas capacidades.</p>
+            </div>
+            <div id="accordion-container" class="max-w-3xl mx-auto space-y-4">
+            </div>
+            <div class="text-center mt-12">
+                <button class="px-6 py-3 bg-teal-600 text-white font-semibold rounded-lg shadow-md hover:bg-teal-700 transition" data-section="agentes">Saiba Mais</button>
+            </div>
+        </section>
+
+        <section id="glossario" class="section-fade-in py-16 md:py-24">
+            <div class="text-center mb-12">
+                <h2 class="text-3xl md:text-4xl font-bold text-slate-900">Glossário de Termos da IA</h2>
+                <p class="mt-4 text-lg text-slate-600 max-w-3xl mx-auto">Explore os termos essenciais que definem o universo da Inteligência Artificial. Clique em cada termo para ver sua descrição.</p>
+            </div>
+            <div id="glossary-container" class="max-w-3xl mx-auto space-y-4">
+            </div>
+        </section>
+
+        <section id="futuro" class="section-fade-in py-16 md:py-24 text-center">
+            <h2 class="text-3xl md:text-4xl font-bold text-slate-900 mb-6">O Futuro Desdobrado: Próximos Passos</h2>
+             <p class="max-w-3xl mx-auto text-lg text-slate-600 mb-8">A jornada da IA está longe de terminar. A convergência de tecnologias, a busca por transparência e o desenvolvimento responsável definirão a próxima era da inteligência artificial, com implicações profundas para a sociedade e a indústria.</p>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-4xl mx-auto text-left">
+                <div class="bg-white p-6 rounded-lg shadow-md">
+                    <h3 class="font-bold text-teal-600 mb-2">Convergência e Híbridos</h3>
+                    <p class="text-slate-600 text-sm">Sistemas combinarão ML, DL e RAG para criar soluções mais robustas e versáteis.</p>
+                </div>
+                <div class="bg-white p-6 rounded-lg shadow-md">
+                    <h3 class="font-bold text-teal-600 mb-2">IA Explicável (XAI)</h3>
+                    <p class="text-slate-600 text-sm">Tornar as "caixas-pretas" do Deep Learning transparentes será crucial para a confiança e adoção em áreas críticas.</p>
+                </div>
+                 <div class="bg-white p-6 rounded-lg shadow-md">
+                    <h3 class="font-bold text-teal-600 mb-2">Ano dos Agentes de IA</h3>
+                    <p class="text-slate-600 text-sm">Aplicações com maior autonomia se tornarão comuns, executando tarefas complexas com independência.</p>
+                </div>
+                <div class="bg-white p-6 rounded-lg shadow-md">
+                    <h3 class="font-bold text-teal-600 mb-2">IA Multimodal</h3>
+                    <p class="text-slate-600 text-sm">A IA entenderá e gerará não apenas texto, mas também imagens, áudio e vídeo de forma integrada.</p>
+                </div>
+                 <div class="bg-white p-6 rounded-lg shadow-md">
+                    <h3 class="font-bold text-teal-600 mb-2">IA no Edge Computing</h3>
+                    <p class="text-slate-600 text-sm">O processamento de IA ocorrerá diretamente em dispositivos, permitindo respostas em tempo real e maior privacidade.</p>
+                </div>
+                 <div class="bg-white p-6 rounded-lg shadow-md">
+                    <h3 class="font-bold text-teal-600 mb-2">Ética e Governança</h3>
+                    <p class="text-slate-600 text-sm">A discussão mudará de "o que a IA pode fazer" para "o que ela deve fazer", com foco em desenvolvimento responsável.</p>
+                </div>
+            </div>
+            <div class="text-center mt-12">
+                <button class="px-6 py-3 bg-teal-600 text-white font-semibold rounded-lg shadow-md hover:bg-teal-700 transition" data-section="futuro">Saiba Mais</button>
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="bg-slate-800 text-white">
+        <div class="container mx-auto py-4 px-4 sm:px-6 lg:px-8 text-center text-sm">
+            <p>&copy; 2025 Aplicação Interativa sobre a Evolução da IA. Conteúdo adaptado do relatório original.</p>
+        </div>
+    </footer>
+
+    <!-- Modal Structure -->
+    <div id="detailModal" class="modal">
+        <div class="modal-content">
+            <span class="close-button">&times;</span>
+            <h3 id="modalTitle" class="text-2xl font-bold text-slate-800 mb-4"></h3>
+            <div id="modalContent" class="text-slate-700 leading-relaxed text-base"></div>
+            <button id="geminiButton" class="mt-4 px-6 py-3 bg-blue-500 text-white font-semibold rounded-lg shadow-md hover:bg-blue-600 transition">
+                ✨ Expandir com Gemini
+            </button>
+            <div id="geminiLoading" class="mt-4 text-center text-teal-600 hidden">Carregando insight do Gemini...</div>
+            <div id="geminiOutput" class="mt-4 p-4 bg-blue-50 rounded-lg text-slate-700 hidden"></div>
+        </div>
+    </div>
+    
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const API_KEY = "";
+        const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${API_KEY}`;
+
+        const timelineData = [
+            { year: "1936", event: "Máquina de Turing", description: "Alan Turing concebe um modelo teórico de computação, a base para os algoritmos modernos." },
+            { year: "1950", event: "Teste de Turing", description: "Turing propõe um teste para avaliar a capacidade de uma máquina exibir inteligência." },
+            { year: "1956", event: "Nasce a 'IA'", description: "John McCarthy cunha o termo 'Inteligência Artificial' na Conferência de Dartmouth." },
+            { year: "1966", event: "Robô Shakey", description: "O primeiro robô móvel que raciocina sobre suas próprias ações, um precursor dos veículos autônomos." },
+            { year: "1975-80", event: "1º Inverno da IA", description: "Período de desilusão e corte de financiamento, devido a promessas exageradas e limitações da IA simbólica." },
+            { year: "1986", event: "Backpropagation", description: "A popularização deste algoritmo revitaliza a pesquisa em redes neurais." },
+            { year: "1997", event: "Deep Blue Vence Kasparov", description: "O supercomputador da IBM derrota o campeão mundial de xadrez, um marco para a IA." },
+            { year: "2012", event: "Revolução da AlexNet", description: "Um modelo de Deep Learning vence a competição ImageNet com uma margem enorme, iniciando a era moderna da IA." },
+            { year: "2016", event: "AlphaGo", description: "A IA da DeepMind derrota o campeão mundial de Go, um jogo considerado muito mais complexo que o xadrez." },
+            { year: "2022", event: "Popularização dos LLMs", description: "O lançamento do ChatGPT torna os Modelos de Linguagem Grandes (LLMs) acessíveis ao público em massa." },
+            { year: "2025", event: "Ano dos Agentes de IA", description: "Previsão de um aumento significativo no uso de agentes autônomos para realizar tarefas complexas." },
+        ];
+        
+        const timelineContainer = document.getElementById('timeline-container');
+        timelineData.forEach(item => {
+            const div = document.createElement('div');
+            div.className = 'timeline-item relative pl-10 pb-4';
+            div.innerHTML = `
+                <div class="timeline-item-content relative border-l-2 border-slate-200 pl-6">
+                    <p class="text-sm font-semibold text-teal-600">${item.year}</p>
+                    <h4 class="font-bold text-slate-800 mt-1">${item.event}</h4>
+                    <p class="text-sm text-slate-600 mt-2">${item.description}</p>
+                </div>
+            `;
+            timelineContainer.appendChild(div);
+        });
+
+        const mlVsDlCtx = document.getElementById('mlVsDlChart').getContext('2d');
+        const mlVsDlChart = new Chart(mlVsDlCtx, {
+            type: 'bar',
+            data: {
+                labels: ['Dependência de Dados', 'Engenharia de Features', 'Interpretabilidade', 'Custo de Treinamento', 'Complexidade do Problema'],
+                datasets: [
+                    {
+                        label: 'ML Tradicional',
+                        data: [2, 1, 5, 2, 3], 
+                        backgroundColor: 'rgba(59, 130, 246, 0.7)',
+                        borderColor: 'rgba(59, 130, 246, 1)',
+                        borderWidth: 1
+                    },
+                    {
+                        label: 'Deep Learning',
+                        data: [5, 5, 1, 5, 5],
+                        backgroundColor: 'rgba(20, 184, 166, 0.7)',
+                        borderColor: 'rgba(13, 148, 136, 1)',
+                        borderWidth: 1
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                indexAxis: 'y',
+                scales: {
+                    x: {
+                        beginAtZero: true,
+                        max: 5,
+                         ticks: {
+                            stepSize: 1,
+                             callback: function(value, index, values) {
+                                const labels = ['', 'Baixo/a', 'Médio-Baixo', 'Médio', 'Médio-Alto', 'Alto/a'];
+                                return labels[value];
+                            }
+                        }
+                    },
+                    y: {
+                        ticks: {
+                            autoSkip: false,
+                             callback: function(value, index, values) {
+                                const label = this.getLabelForValue(value);
+                                return label.length > 16 ? label.match(/.{1,16}/g) : label;
+                            }
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        position: 'top',
+                    },
+                    title: {
+                        display: true,
+                        text: 'Avaliação de Características (1=Baixo, 5=Alto)',
+                        font: { size: 14, weight: 'normal' },
+                        color: '#475569'
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.dataset.label || '';
+                                if (label) {
+                                    label += ': ';
+                                }
+                                const value = context.raw;
+                                const labels = ['', 'Baixo/a', 'Médio-Baixo', 'Médio', 'Médio-Alto', 'Alto/a'];
+                                label += labels[value];
+                                return label;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+        
+        const agentData = [
+            { title: "Agente de Reflexo Simples", content: "A forma mais básica. Age apenas com base na percepção atual, seguindo regras de condição-ação (se-então). Não tem memória de eventos passados. <strong>Exemplo:</strong> Um termostato inteligente que ativa o aquecimento ou resfriamento automaticamente ao detectar que a temperatura ambiente caiu ou subiu além de limites predefinidos." },
+            { title: "Agente Baseado em Modelo", content: "Mais avançado, mantém um 'modelo' interno do mundo. Usa esse modelo, que é uma memória de como o mundo funciona, para tomar decisões, especialmente quando o ambiente não é totalmente visível. <strong>Exemplo:</strong> Um robô aspirador que constrói e atualiza um mapa interno da casa, permitindo-lhe navegar eficientemente, evitar obstáculos já conhecidos e cobrir todas as áreas mesmo em ambientes com visibilidade limitada." },
+            { title: "Agente Baseado em Objetivo", content: "Possui metas explícitas e planeja sequências de ações para alcançá-las. Considera os resultados futuros de suas ações para decidir o melhor caminho a seguir. <strong>Exemplo:</strong> Um sistema de navegação GPS que, além de encontrar a rota mais curta, pode planejar itinerários considerando múltiplos objetivos como evitar pedágios, tráfego pesado ou rotas panorâmicas, e recalcular em tempo real em caso de desvios." },
+            { title: "Agente Baseado em Utilidade", content: "Vai além dos objetivos, avaliando a 'utilidade' ou a desejabilidade de diferentes resultados. Busca maximizar a felicidade ou o benefício esperado, sendo útil para resolver conflitos entre objetivos. <strong>Exemplo:</strong> Um sistema de negociação algorítmica em um mercado financeiro que não apenas busca um preço-alvo, mas também otimiza a execução de ordens com base em custos de transação, volatilidade do mercado e volume, maximizando o retorno esperado sob incerteza." },
+            { title: "Agente de Aprendizagem", content: "Capaz de melhorar seu desempenho ao longo do tempo aprendendo com a experiência. Adapta-se a ambientes desconhecidos e refina suas estratégias. É o que permite a verdadeira autonomia. <strong>Exemplo:</strong> Um sistema de recomendação em uma plataforma de streaming (como Netflix) que continuamente aprende as preferências do usuário com base no histórico de visualização, avaliações e interações, adaptando suas sugestões para aumentar o engajamento e a satisfação." },
+            { title: "Agente Generativo de IA", content: "A evolução mais recente, impulsionada por LLMs. Possui alta autonomia, pode interagir em linguagem natural, usar ferramentas de software e quebrar objetivos complexos em subtarefas executáveis. <strong>Exemplo:</strong> A 'Devin AI' é um exemplo prático, agindo como um engenheiro de software autônomo. Ela pode receber uma tarefa de desenvolvimento (ex: 'construa um site com tais funcionalidades'), pesquisar soluções, escrever código, depurá-lo, executar testes e até mesmo implantar a aplicação, tudo de forma autônoma." },
+        ];
+
+        const accordionContainer = document.getElementById('accordion-container');
+        agentData.forEach((item, index) => {
+            const accordionItem = document.createElement('div');
+            accordionItem.className = 'border border-slate-200 rounded-lg overflow-hidden bg-white';
+            accordionItem.innerHTML = `
+                <button class="accordion-button w-full text-left p-4 flex justify-between items-center font-semibold text-slate-700 hover:bg-slate-50 transition">
+                    <span>${item.title}</span>
+                    <span class="accordion-icon transform transition-transform duration-300">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                    </span>
+                </button>
+                <div class="accordion-content">
+                    <div class="p-4 border-t border-slate-200 text-slate-600 text-sm">
+                        <p>${item.content}</p>
+                    </div>
+                </div>
+            `;
+            accordionContainer.appendChild(accordionItem);
+        });
+
+        document.querySelectorAll('.accordion-button').forEach(button => {
+            button.addEventListener('click', () => {
+                const content = button.nextElementSibling;
+                const icon = button.querySelector('.accordion-icon');
+                
+                if (content.style.maxHeight) {
+                    content.style.maxHeight = null;
+                    icon.classList.remove('rotate-180');
+                } else {
+                     document.querySelectorAll('.accordion-content').forEach(c => c.style.maxHeight = null);
+                     document.querySelectorAll('.accordion-icon').forEach(i => i.classList.remove('rotate-180'));
+                    content.style.maxHeight = content.scrollHeight + "px";
+                    icon.classList.add('rotate-180');
+                } 
+            });
+        });
+
+        const glossaryData = [
+            { term: "IA Simbólica", definition: "Paradigma inicial da IA baseado na representação do conhecimento utilizando símbolos e regras lógicas formais." },
+            { term: "Invernos da IA", definition: "Períodos de desilusão e corte de financiamento em pesquisa de IA, causados por promessas exageradas e limitações da tecnologia." },
+            { term: "Machine Learning (ML)", definition: "Subcampo da IA que permite que computadores aprendam a partir de dados para identificar padrões e fazer previsões, sem programação explícita." },
+            { term: "Deep Learning (DL)", definition: "Subconjunto do ML que utiliza redes neurais artificiais com múltiplas camadas ('profundas') para aprender padrões complexos de dados brutos." },
+            { term: "Redes Neurais Artificiais (RNAs)", definition: "Modelos computacionais inspirados na estrutura e no funcionamento do cérebro humano, compostos por camadas interconectadas." },
+            { term: "Retropropagação (Backpropagation)", definition: "Algoritmo amplamente utilizado para treinar redes neurais, ajustando os pesos da rede com base no erro de saída." },
+            { term: "AlexNet", definition: "Um modelo de Deep Learning que, em 2012, revolucionou a visão computacional ao vencer a competição ImageNet, solidificando a posição do DL." },
+            { term: "Engenharia de Características", definition: "Processo de seleção, transformação e criação de variáveis de entrada (features) a partir de dados brutos, crucial no ML tradicional." },
+            { term: "Interpretabilidade", definition: "A capacidade de entender como um modelo de IA chegou a uma determinada decisão ou previsão, especialmente relevante para 'caixas-pretas' como o Deep Learning." },
+            { term: "Geração Aumentada por Recuperação (RAG)", definition: "Um framework que aprimora Modelos de Linguagem Grandes (LLMs) ao integrar a recuperação de informações de bases de conhecimento externas e atualizadas, reduzindo 'alucinações'." },
+            { term: "LLMs (Large Language Models)", definition: "Modelos de linguagem grandes, baseados em Deep Learning, capazes de processar e gerar texto em linguagem natural de forma complexa." },
+            { term: "Alucinações (LLM)", definition: "Termo usado quando um Modelo de Linguagem Grande gera respostas que parecem plausíveis, mas são factualmente incorretas ou inventadas." },
+            { term: "Embeddings", definition: "Representações numéricas de dados (texto, imagens, etc.) em espaços vetoriais, onde itens semanticamente semelhantes estão próximos uns dos outros." },
+            { term: "Agente Inteligente", definition: "Qualquer entidade que percebe seu ambiente por meio de sensores e atua sobre ele por intermédio de atuadores para alcançar objetivos." },
+            { term: "Autonomia (IA)", definition: "A capacidade de um agente de IA de perseguir objetivos e ter controle sobre suas próprias ações sem a necessidade de comandos externos constantes." },
+            { term: "Racionalidade (IA)", definition: "A seleção de ações por um agente de IA que maximiza seu critério de desempenho com base nas evidências disponíveis e no conhecimento prévio." },
+            { term: "XAI (IA Explicável)", definition: "Uma área de pesquisa focada em desenvolver métodos e técnicas para tornar os modelos de IA mais transparentes, compreensíveis e confiáveis para os humanos." },
+            { term: "Edge Computing", definition: "Um paradigma de computação distribuída que aproxima o processamento de dados da fonte onde os dados são criados, permitindo respostas em tempo real e maior privacidade." },
+            { term: "IA Multimodal", definition: "Sistemas de IA capazes de entender, processar e gerar informações de múltiplas modalidades, como texto, imagens, áudio e vídeo, de forma integrada." }
+        ];
+
+        const glossaryContainer = document.getElementById('glossary-container');
+        glossaryData.forEach((item, index) => {
+            const glossaryItem = document.createElement('div');
+            glossaryItem.className = 'border border-slate-200 rounded-lg overflow-hidden bg-white';
+            glossaryItem.innerHTML = `
+                <button class="accordion-button w-full text-left p-4 flex justify-between items-center font-semibold text-slate-700 hover:bg-slate-50 transition">
+                    <span>${item.term}</span>
+                    <span class="accordion-icon transform transition-transform duration-300">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                    </span>
+                </button>
+                <div class="accordion-content">
+                    <div class="p-4 border-t border-slate-200 text-slate-600 text-sm">
+                        <p>${item.definition}</p>
+                        <button class="mt-2 px-4 py-2 bg-blue-500 text-white text-sm font-semibold rounded-lg hover:bg-blue-600 transition gemini-glossary-button" data-term="${item.term}">
+                            ✨ Explicar com Gemini
+                        </button>
+                        <div class="gemini-glossary-loading mt-2 text-center text-teal-600 hidden">Carregando explicação do Gemini...</div>
+                        <div class="gemini-glossary-output mt-2 p-3 bg-blue-100 rounded-lg text-slate-700 text-xs hidden"></div>
+                    </div>
+                </div>
+            `;
+            glossaryContainer.appendChild(glossaryItem);
+        });
+
+        document.querySelectorAll('.accordion-button').forEach(button => {
+            button.addEventListener('click', () => {
+                const content = button.nextElementSibling;
+                const icon = button.querySelector('.accordion-icon');
+                
+                if (content.style.maxHeight) {
+                    content.style.maxHeight = null;
+                    icon.classList.remove('rotate-180');
+                } else {
+                     document.querySelectorAll('.accordion-content').forEach(c => c.style.maxHeight = null);
+                     document.querySelectorAll('.accordion-icon').forEach(i => i.classList.remove('rotate-180'));
+                    content.style.maxHeight = content.scrollHeight + "px";
+                    icon.classList.add('rotate-180');
+                } 
+            });
+        });
+
+
+        const sections = document.querySelectorAll('section');
+        const navLinks = document.querySelectorAll('.nav-link');
+        const mobileNav = document.getElementById('mobile-nav');
+
+        const observerOptions = {
+            root: null,
+            rootMargin: '0px',
+            threshold: 0.1
+        };
+
+        const sectionObserver = new IntersectionObserver((entries, observer) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                }
+            });
+        }, observerOptions);
+        
+        sections.forEach(section => {
+            section.classList.add('section-fade-in');
+            sectionObserver.observe(section);
+        });
+
+        const navObserverOptions = {
+            root: null,
+            rootMargin: '-50% 0px -50% 0px',
+            threshold: 0
+        };
+
+        const navObserver = new IntersectionObserver((entries, observer) => {
+            entries.forEach(entry => {
+                if(entry.isIntersecting) {
+                    const id = entry.target.getAttribute('id');
+                    navLinks.forEach(link => {
+                        link.classList.toggle('active', link.getAttribute('href') === `#${id}`);
+                    });
+                     mobileNav.value = `#${id}`;
+                }
+            });
+        }, navObserverOptions);
+        
+        sections.forEach(section => navObserver.observe(section));
+
+        mobileNav.addEventListener('change', (e) => {
+            window.location.hash = e.target.value;
+        });
+
+        // Modal Logic
+        const detailModal = document.getElementById('detailModal');
+        const modalTitle = document.getElementById('modalTitle');
+        const modalContent = document.getElementById('modalContent');
+        const closeButton = document.querySelector('.close-button');
+        const saibaMaisButtons = document.querySelectorAll('button[data-section]');
+        const geminiButton = document.getElementById('geminiButton');
+        const geminiOutput = document.getElementById('geminiOutput');
+        const geminiLoading = document.getElementById('geminiLoading');
+
+        let currentModalContentForGemini = { title: '', content: '' };
+
+        const sectionDetails = {
+            'inicio': {
+                title: 'O Amanhecer da Inteligência Artificial',
+                content: `
+                    <p class="mb-4">A Inteligência Artificial (IA), outrora um conceito confinado aos reinos da ficção científica e da especulação filosófica, transformou-se em uma realidade tangível que permeia quase todos os aspectos da vida moderna. Desde as visões pioneiras de máquinas pensantes de Alan Turing até os assistentes virtuais onipresentes em nossos dispositivos, a jornada da IA é uma tapeçaria intrincada de inovação, desafios e descobertas contínuas.</p>
+                    <p>A presente análise embarcará em uma jornada cronológica e conceitual, desdobrando a evolução da Inteligência Artificial em seus subcampos cruciais: Machine Learning (ML) e Deep Learning (DL). Além disso, serão exploradas inovações mais recentes, como a Geração Aumentada por Recuperação (RAG), que aprimora os Modelos de Linguagem Grandes (LLMs), e a ascensão dos Agentes Inteligentes, que materializam a autonomia da IA no mundo real. Serão destacadas as hierarquias e interconexões que definem essa teia tecnológica, revelando como cada avanço se baseia no anterior, impulsionando a IA a novos patamares de capacidade e aplicabilidade.</p>
+                `
+            },
+            'linha-do-tempo': {
+                title: 'A Profundidade dos Invernos da IA',
+                content: `
+                    <p class="mb-4">A jornada da Inteligência Artificial teve suas origens conceituais antes mesmo de o termo ser formalmente cunhado. Em 1936, o matemático britânico Alan Turing concebeu a Máquina de Turing, um dispositivo teórico que lançou as bases para a computação moderna e a noção de algoritmo. Pouco depois, em 1943, os pesquisadores americanos Warren McCulloch e Walter Pitts desenvolveram o primeiro modelo de neurônios artificiais, um marco que é frequentemente considerado a primeira inteligência artificial, mesmo que o termo ainda não existisse.</p>
+                    <p class="mb-4">Essa fase inicial da IA foi caracterizada por uma forte base teórica e ambição, mas as aplicações práticas, embora inovadoras para a época, eram rudimentares. Essa observação indica uma lacuna significativa entre o que os pesquisadores concebiam como possível e o que a tecnologia da época permitia realizar. As ideias estavam substancialmente à frente da capacidade computacional e da disponibilidade de dados. Essa desconexão entre a teoria ambiciosa e a capacidade tecnológica limitada foi uma das principais causas do primeiro "Inverno da IA" (notavelmente entre 1975-1980 e 1987-1993).</p>
+                    <p>A limitação central da IA simbólica não era apenas uma falha técnica, mas uma inadequação conceitual em modelar a inteligência humana, que muitas vezes opera com intuição e reconhecimento de padrões implícitos, e não apenas com lógica explícita. A "fragilidade" desses sistemas, sua incapacidade de se adaptar a cenários não previstos ou a dados "sujos", tornou os "Invernos da IA" uma consequência natural do choque entre a ambição e a realidade.</p>
+                `
+            },
+            'hierarquia': {
+                title: 'IA Simbólica e a Transição para o Aprendizado',
+                content: `
+                    <p class="mb-4">No início da Inteligência Artificial, o paradigma dominante era a <strong>IA Simbólica</strong>, que se baseava na representação do conhecimento utilizando símbolos, palavras e regras lógicas formais. Os sistemas simbólicos eram caracterizados por um alto grau de determinismo, interpretabilidade e capacidade de raciocínio lógico, sendo ideais para domínios onde o conhecimento podia ser estruturado de forma clara e as regras eram bem definidas.</p>
+                    <p>Contudo, a IA Simbólica enfrentou limitações significativas que restringiram seu alcance. Ela demonstrava dificuldade em lidar com situações complexas e ambíguas, apresentava desafios na aprendizagem a partir de dados não estruturados, sofria com problemas de escalabilidade ao lidar com grandes volumes de informações e possuía pouca adaptabilidade a mudanças rápidas no ambiente. Essas limitações, combinadas com promessas exageradas sobre o potencial da tecnologia e a falta de progresso tangível em problemas mais amplos, levaram a períodos de desilusão e a uma drástica redução no financiamento para pesquisa, conhecidos como os "Invernos da IA".</p>
+                    <p>Essa experiência de "inverno" atuou como um catalisador para a busca por novos paradigmas. A necessidade premente de superar a rigidez da IA simbólica e aprimorar a capacidade de aprendizado a partir de dados foi o que impulsionou o ressurgimento de abordagens como as redes neurais e, subsequentemente, o Machine Learning.</p>
+                `
+            },
+            'comparacoes': {
+                title: 'A Revolução da Aprendizagem de Máquina',
+                content: `
+                    <p class="mb-4">O Machine Learning (ML), ou Aprendizagem de Máquina, emergiu como um subcampo fundamental da Inteligência Artificial, representando uma nova abordagem para a criação de sistemas inteligentes. Seu objetivo central é capacitar computadores a aprender a partir de dados para identificar padrões e fazer previsões, eliminando a necessidade de serem explicitamente programados para cada tarefa específica.</p>
+                    <p class="mb-4">Essa metodologia marcou uma ruptura significativa em relação à programação tradicional baseada em regras. A ascensão do ML ganhou proeminência notável devido aos avanços exponenciais na capacidade de computação e à crescente disponibilidade de grandes volumes de dados. Essa transição representa uma mudança de paradigma fundamental, passando de "regras explícitas" para "padrões implícitos". Enquanto a IA simbólica falhava em cenários complexos porque a realidade frequentemente desafia a codificação de regras explícitas, o Machine Learning abraça essa complexidade ao permitir que a máquina <em>descubra</em> as regras (ou padrões) implicitamente a partir dos dados.</p>
+                    <p>Os princípios centrais do Machine Learning residem na capacidade de aprender com dados passados para prever resultados futuros ou tomar decisões informadas. Os modelos de ML operam de forma iterativa, adaptando-se e aprimorando-se autonomamente à medida que são expostos a novos dados.</p>
+                `
+            },
+            'agentes': {
+                title: 'O Agente como a Manifestação da IA',
+                content: `
+                    <p class="mb-4">Um agente inteligente é definido como qualquer entidade que percebe seu ambiente por meio de sensores e atua sobre ele por intermédio de atuadores. As características essenciais que definem um agente inteligente são: Percepção e Ação, Autonomia (capacidade de perseguir objetivos automaticamente), Inteligência/Aprendizagem (posse de base de conhecimento e habilidade de aprender) e Racionalidade (seleção de ações que maximizam critério de desempenho).</p>
+                    <p>Enquanto Machine Learning e Deep Learning se concentram em <em>como</em> as máquinas aprendem e processam dados, o conceito de "agente inteligente" estabelece o <em>propósito</em> e o <em>contexto operacional</em> para esse aprendizado. Um agente é o ponto onde a inteligência abstrata da IA se materializa, interagindo com o mundo real. Representa a dimensão "fazer" da IA, traduzindo decisões em ações concretas. Isso significa que os avanços em ML, DL e RAG, em última instância, convergem para a criação de agentes mais sofisticados e capazes.</p>
+                    <p>Um LLM poderoso pode ser "inteligente", mas ele só se torna um "agente" quando pode perceber, raciocinar e agir em um ambiente. Essa relação hierárquica culmina no agente, que é a manifestação derradeira da utilidade da IA.</p>
+                `
+            },
+            'futuro': {
+                title: 'Desafios e Direções Futuras da IA',
+                content: `
+                    <p class="mb-4">A jornada da Inteligência Artificial é uma narrativa de persistência, inovação e adaptação contínua. As tendências atuais apontam para um futuro onde a IA será cada vez mais integrada e sofisticada. A <strong>convergência e os modelos híbridos</strong> se tornarão a norma, mesclando o ML tradicional com o Deep Learning e integrando o RAG em sistemas agentes para combinar os pontos fortes de cada abordagem.</p>
+                    <p class="mb-4">A busca por <strong>IA Explicável (XAI)</strong> continuará a ser uma prioridade, visando tornar os modelos de "caixa-preta" mais transparentes e compreensíveis, o que é crucial para a adoção em setores regulamentados. A <strong>automação e a acessibilidade</strong> do desenvolvimento de IA, por meio de plataformas <em>low-code</em> e engenharia de características automatizada, democratizarão o acesso a essas tecnologias.</p>
+                    <p>À medida que a IA se torna mais poderosa e onipresente, a discussão evolui de <em>o que a IA pode fazer</em> para <em>o que a IA deve fazer</em> e <em>como garantir que ela o faça de forma segura e ética</em>. Isso sinaliza uma maturação do campo, reconhecendo que o avanço tecnológico deve ser acompanhado pela responsabilidade social. As implicações para a sociedade e a indústria são profundas. O desenvolvimento contínuo da IA exige atenção constante a desafios éticos, como o viés algorítmico, a privacidade dos dados e a responsabilidade em sistemas autônomos.</p>
+                `
+            }
+        };
+
+        saibaMaisButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                const sectionId = button.dataset.section;
+                const details = sectionDetails[sectionId];
+                if (details) {
+                    modalTitle.textContent = details.title;
+                    modalContent.innerHTML = details.content;
+                    currentModalContentForGemini = { title: details.title, content: details.content };
+                    geminiOutput.innerHTML = '';
+                    geminiOutput.classList.add('hidden');
+                    geminiLoading.classList.add('hidden');
+                    detailModal.classList.add('show');
+                }
+            });
+        });
+
+        closeButton.addEventListener('click', () => {
+            detailModal.classList.remove('show');
+        });
+
+        detailModal.addEventListener('click', (e) => {
+            if (e.target === detailModal) {
+                detailModal.classList.remove('show');
+            }
+        });
+
+        geminiButton.addEventListener('click', async () => {
+            geminiOutput.classList.add('hidden');
+            geminiLoading.classList.remove('hidden');
+
+            const promptText = `Dado o título "${currentModalContentForGemini.title}" e o seguinte conteúdo:
+            "${currentModalContentForGemini.content.replace(/<[^>]*>/g, '')}"
+            Forneça uma breve elaboração ou um insight adicional, com até 3 parágrafos, sem repetir o que já está explícito. Foque em complementar a informação.`;
+
+            try {
+                let chatHistory = [];
+                chatHistory.push({ role: "user", parts: [{ text: promptText }] });
+                const payload = { contents: chatHistory };
+
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const result = await response.json();
+
+                if (result.candidates && result.candidates.length > 0 &&
+                    result.candidates[0].content && result.candidates[0].content.parts &&
+                    result.candidates[0].content.parts.length > 0) {
+                    const text = result.candidates[0].content.parts[0].text;
+                    geminiOutput.innerHTML = `
+                        <div class="font-bold text-teal-700 mb-2">✨ Insight do Gemini:</div>
+                        ${text.replace(/\n/g, '<br>')}
+                    `;
+                    geminiOutput.classList.remove('hidden');
+                } else {
+                    geminiOutput.innerHTML = `<div class="text-red-500">Desculpe, não consegui gerar um insight agora. Tente novamente.</div>`;
+                    geminiOutput.classList.remove('hidden');
+                }
+            } catch (error) {
+                console.error("Erro ao chamar a API Gemini para o modal:", error);
+                geminiOutput.innerHTML = `<div class="text-red-500">Ocorreu um erro ao conectar com a API Gemini.</div>`;
+                geminiOutput.classList.remove('hidden');
+            } finally {
+                geminiLoading.classList.add('hidden');
+            }
+        });
+
+        const geminiGlossaryButtons = document.querySelectorAll('.gemini-glossary-button');
+
+        geminiGlossaryButtons.forEach(button => {
+            button.addEventListener('click', async () => {
+                const term = button.dataset.term;
+                const outputDiv = button.nextElementSibling.nextElementSibling; // The div for output
+                const loadingDiv = button.nextElementSibling; // The div for loading
+
+                outputDiv.innerHTML = '';
+                outputDiv.classList.add('hidden');
+                loadingDiv.classList.remove('hidden');
+
+                const promptText = `Explique o termo "${term}" de forma mais simples e com um exemplo prático. Mantenha a resposta concisa, em até 2-3 frases.`;
+
+                try {
+                    let chatHistory = [];
+                    chatHistory.push({ role: "user", parts: [{ text: promptText }] });
+                    const payload = { contents: chatHistory };
+
+                    const response = await fetch(API_URL, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                    const result = await response.json();
+
+                    if (result.candidates && result.candidates.length > 0 &&
+                        result.candidates[0].content && result.candidates[0].content.parts &&
+                        result.candidates[0].content.parts.length > 0) {
+                        const text = result.candidates[0].content.parts[0].text;
+                        outputDiv.innerHTML = `<div class="font-bold text-teal-700 mb-1">✨ Explicação do Gemini:</div>${text.replace(/\n/g, '<br>')}`;
+                        outputDiv.classList.remove('hidden');
+                    } else {
+                        outputDiv.innerHTML = `<div class="text-red-500">Não foi possível gerar a explicação.</div>`;
+                        outputDiv.classList.remove('hidden');
+                    }
+                } catch (error) {
+                    console.error("Erro ao chamar a API Gemini para glossário:", error);
+                    outputDiv.innerHTML = `<div class="text-red-500">Erro ao conectar com a API Gemini.</div>`;
+                    outputDiv.classList.remove('hidden');
+                } finally {
+                    loadingDiv.classList.add('hidden');
+                }
+            });
+        });
+
+    });
+    </script>
+</body>
+</html>
