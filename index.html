@@ -450,15 +450,18 @@
                 const content = button.nextElementSibling;
                 const icon = button.querySelector('.accordion-icon');
                 
-                if (content.style.maxHeight) {
-                    content.style.maxHeight = null;
-                    icon.classList.remove('rotate-180');
-                } else {
-                     document.querySelectorAll('.accordion-content').forEach(c => c.style.maxHeight = null);
-                     document.querySelectorAll('.accordion-icon').forEach(i => i.classList.remove('rotate-180'));
+                // Check if this accordion is currently open
+                const isOpen = content.style.maxHeight && content.style.maxHeight !== '0px';
+
+                // Close all accordions first
+                document.querySelectorAll('.accordion-content').forEach(c => c.style.maxHeight = '0px');
+                document.querySelectorAll('.accordion-icon').forEach(i => i.classList.remove('rotate-180'));
+
+                if (!isOpen) {
+                    // Open the clicked accordion
                     content.style.maxHeight = content.scrollHeight + "px";
                     icon.classList.add('rotate-180');
-                } 
+                }
             });
         });
 
@@ -509,20 +512,23 @@
             glossaryContainer.appendChild(glossaryItem);
         });
 
-        document.querySelectorAll('.accordion-button').forEach(button => {
+        document.querySelectorAll('#glossary-container .accordion-button').forEach(button => {
             button.addEventListener('click', () => {
                 const content = button.nextElementSibling;
                 const icon = button.querySelector('.accordion-icon');
                 
-                if (content.style.maxHeight) {
-                    content.style.maxHeight = null;
-                    icon.classList.remove('rotate-180');
-                } else {
-                     document.querySelectorAll('.accordion-content').forEach(c => c.style.maxHeight = null);
-                     document.querySelectorAll('.accordion-icon').forEach(i => i.classList.remove('rotate-180'));
+                // Check if this accordion is currently open
+                const isOpen = content.style.maxHeight && content.style.maxHeight !== '0px';
+
+                // Close all glossaries first
+                document.querySelectorAll('#glossary-container .accordion-content').forEach(c => c.style.maxHeight = '0px');
+                document.querySelectorAll('#glossary-container .accordion-icon').forEach(i => i.classList.remove('rotate-180'));
+
+                if (!isOpen) {
+                    // Open the clicked glossary item
                     content.style.maxHeight = content.scrollHeight + "px";
                     icon.classList.add('rotate-180');
-                } 
+                }
             });
         });
 
@@ -605,7 +611,7 @@
             'hierarquia': {
                 title: 'IA Simbólica e a Transição para o Aprendizado',
                 content: `
-                    <p class="mb-4">No início da Inteligência Artificial, o paradigma dominante era a <strong>IA Simbólica</strong>, que se baseava na representação do conhecimento utilizando símbolos, palavras e regras lógicas formais. Os sistemas simbólicos eram caracterizados por um alto grau de determinismo, interpretabilidade e capacidade de raciocínio lógico, sendo ideais para domínios onde o conhecimento podia ser estruturado de forma clara e as regras eram bem definidas.</p>
+                    <p class="mb-4">No início da Inteligência Artificial, o paradigma dominante era a <strong>IA Simbólica</strong>, que se baseava na representação do conhecimento utilizando símbolos e regras lógicas formais. Os sistemas simbólicos eram caracterizados por um alto grau de determinismo, interpretabilidade e capacidade de raciocínio lógico, sendo ideais para domínios onde o conhecimento podia ser estruturado de forma clara e as regras eram bem definidas.</p>
                     <p>Contudo, a IA Simbólica enfrentou limitações significativas que restringiram seu alcance. Ela demonstrava dificuldade em lidar com situações complexas e ambíguas, apresentava desafios na aprendizagem a partir de dados não estruturados, sofria com problemas de escalabilidade ao lidar com grandes volumes de informações e possuía pouca adaptabilidade a mudanças rápidas no ambiente. Essas limitações, combinadas com promessas exageradas sobre o potencial da tecnologia e a falta de progresso tangível em problemas mais amplos, levaram a períodos de desilusão e a uma drástica redução no financiamento para pesquisa, conhecidos como os "Invernos da IA".</p>
                     <p>Essa experiência de "inverno" atuou como um catalisador para a busca por novos paradigmas. A necessidade premente de superar a rigidez da IA simbólica e aprimorar a capacidade de aprendizado a partir de dados foi o que impulsionou o ressurgimento de abordagens como as redes neurais e, subsequentemente, o Machine Learning.</p>
                 `
